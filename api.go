@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,6 @@ const (
 	postCode    = "7545MR"
 	houseNumber = 4
 	houseLetter = "a"
-	addressId
 )
 
 /*
@@ -40,8 +40,11 @@ type Calendar struct {
 }
 
 func main() {
-	var address *Address = createAddress()
-	getCalendar(address)
+	message, ok := getMessage(createAddress())
+	if ok != nil {
+		fmt.Println("Something went wrong.")
+	}
+	fmt.Println(*message)
 }
 
 func createAddress() *Address {
@@ -54,9 +57,19 @@ func createAddress() *Address {
 	return &address
 }
 
-func getTimeNow() {
-	currentTime := time.Now()
-	fmt.Println("Today is: ", currentTime.Format("2006-01-02"))
+func createCalendar(id string) *Calendar {
+	calendar := Calendar{
+		CompanyCode:     companyCode,
+		UniqueAddressID: id,
+		StartDate:       getDateToday(),
+		EndDate:         getDateToday(),
+	}
+	return &calendar
+}
+
+func getDateToday() string {
+	return time.Now().Format("2006-01-02") // For testing, use the line below
+	//return "2020-10-26" // For real date, use the line above
 }
 
 func getAddressRequest(address *Address) (*string, error) {
@@ -81,20 +94,53 @@ func getAddressRequest(address *Address) (*string, error) {
 		return nil, err
 	}
 
-	for _,item:=range m["dataList"].([]interface{}) {
+	for _, item := range m["dataList"].([]interface{}) {
 		a := fmt.Sprintf("%v", item.(map[string]interface{})["UniqueId"])
 		return &a, nil
 	}
 	return nil, nil
 }
 
-
-func getCalendar(address *Address) {
+func getCalendar(address *Address) (*string, error) {
 	id, ok := getAddressRequest(address)
 	if ok != nil {
-		fmt.Println("Error: ", id)
+		return nil, errors.New("Couldn't get Address.")
 	}
-	addressId := *id
-	fmt.Println(addressId)
+	calendar := createCalendar(*id)
+
+	bytearray, err := json.Marshal(calendar)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.Post(calendarUrl, "application/json", bytes.NewBuffer(bytearray))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	m := make(map[string]interface{})
+	err = json.Unmarshal(body, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range m["dataList"].([]interface{}) {
+		pickupType := fmt.Sprintf("%v", item.(map[string]interface{})["_pickupTypeText"])
+		return &pickupType, nil
+	}
+	return nil, nil
 }
 
+func getMessage(address *Address) (*string, error) {
+	pickup, ok := getCalendar(address)
+	if ok != nil {
+		return nil, errors.New("Couldn't get Calendar.")
+	}
+	pickupMessage := fmt.Sprint("Today, on the ", getDateToday(), " you need to deposit a ", *pickup, " container.")
+	return &pickupMessage, nil
+}
