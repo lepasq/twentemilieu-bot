@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"bytes"
@@ -43,6 +43,7 @@ func main() {
 	message, ok := getMessage(createAddress())
 	if ok != nil {
 		fmt.Println("Something went wrong.")
+		return
 	}
 	fmt.Println(*message)
 }
@@ -98,7 +99,7 @@ func getAddressRequest(address *Address) (*string, error) {
 		a := fmt.Sprintf("%v", item.(map[string]interface{})["UniqueId"])
 		return &a, nil
 	}
-	return nil, nil
+	return nil, errors.New("Couldn't get Calendar.")
 }
 
 func getCalendar(address *Address) (*string, error) {
@@ -133,7 +134,7 @@ func getCalendar(address *Address) (*string, error) {
 		pickupType := fmt.Sprintf("%v", item.(map[string]interface{})["_pickupTypeText"])
 		return &pickupType, nil
 	}
-	return nil, nil
+	return nil, errors.New("Couldn't get Calendar.")
 }
 
 func getMessage(address *Address) (*string, error) {
