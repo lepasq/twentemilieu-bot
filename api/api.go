@@ -8,26 +8,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+	"twentemilieu-whatsapp-bot/config"
 )
 
 const (
 	calendarUrl = "https://twentemilieuapi.ximmio.com/api/GetCalendar"
 	addressUrl  = "https://twentemilieuapi.ximmio.com/api/FetchAdress"
 	companyCode = "8d97bb56-5afd-4cbc-a651-b4f7314264b4"
-	postCode    = "7545MR"
-	houseNumber = 4
-	houseLetter = "a"
 )
-
-/*
- * Struct for making an API request to get one's address.
- */
-type Address struct {
-	CompanyCode string
-	PostCode    string
-	HouseNumber int
-	HouseLetter string
-}
 
 /*
  * Struct for making an API request to get one's calendar.
@@ -37,25 +25,6 @@ type Calendar struct {
 	UniqueAddressID string
 	StartDate       string
 	EndDate         string
-}
-
-func main() {
-	message, ok := getMessage(createAddress())
-	if ok != nil {
-		fmt.Println("Something went wrong.")
-		return
-	}
-	fmt.Println(*message)
-}
-
-func createAddress() *Address {
-	address := Address{
-		CompanyCode: companyCode,
-		PostCode:    postCode,
-		HouseNumber: houseNumber,
-		HouseLetter: houseLetter,
-	}
-	return &address
 }
 
 func createCalendar(id string) *Calendar {
@@ -73,7 +42,7 @@ func getDateToday() string {
 	//return "2020-10-26" // For real date, use the line above
 }
 
-func getAddressRequest(address *Address) (*string, error) {
+func getAddressRequest(address *config.Address) (*string, error) {
 	bytearray, err := json.Marshal(*address)
 	if err != nil {
 		return nil, err
@@ -99,10 +68,10 @@ func getAddressRequest(address *Address) (*string, error) {
 		a := fmt.Sprintf("%v", item.(map[string]interface{})["UniqueId"])
 		return &a, nil
 	}
-	return nil, errors.New("Couldn't get Calendar.")
+	return nil, errors.New("Couldn't get Address.")
 }
 
-func getCalendar(address *Address) (*string, error) {
+func getCalendar(address *config.Address) (*string, error) {
 	id, ok := getAddressRequest(address)
 	if ok != nil {
 		return nil, errors.New("Couldn't get Address.")
@@ -134,13 +103,13 @@ func getCalendar(address *Address) (*string, error) {
 		pickupType := fmt.Sprintf("%v", item.(map[string]interface{})["_pickupTypeText"])
 		return &pickupType, nil
 	}
-	return nil, errors.New("Couldn't get Calendar.")
+	return nil, errors.New("Couldn't get deposits for today.")
 }
 
-func getMessage(address *Address) (*string, error) {
-	pickup, ok := getCalendar(address)
+func GetMessage(config *config.Config) (*string, error) {
+	pickup, ok := getCalendar(config.Api)
 	if ok != nil {
-		return nil, errors.New("Couldn't get Calendar.")
+		return nil, errors.New("There are no deposits for today.")
 	}
 	pickupMessage := fmt.Sprint("Today, on the ", getDateToday(), " you need to deposit a ", *pickup, " container.")
 	return &pickupMessage, nil

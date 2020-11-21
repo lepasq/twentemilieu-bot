@@ -1,4 +1,4 @@
-package bot
+package handlers
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"os"
 )
 
-type twenteHandler struct {
+type TwenteHandler struct {
 	Conn      *whatsapp.Conn
 	StartTime uint64
 }
 
-func (twenteHandler) HandleError(err error) {
+func (TwenteHandler) HandleError(err error) {
 	fmt.Fprintf(os.Stderr, "%v", err)
 }
 
-func (twenteHandler) HandleTextMessage(message whatsapp.TextMessage) {
+func (TwenteHandler) HandleTextMessage(message whatsapp.TextMessage) {
 	fmt.Println(message)
 }

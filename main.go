@@ -1,25 +1,38 @@
-package bot
+package main
 
 import (
 	"encoding/gob"
 	"fmt"
 	qrT "github.com/Baozisoftware/qrcode-terminal-go"
-	whatsapp "github.com/Rhymen/go-whatsapp"
+	"github.com/Rhymen/go-whatsapp"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+	"twentemilieu-whatsapp-bot/config"
+	"twentemilieu-whatsapp-bot/handlers"
+	"twentemilieu-whatsapp-bot/scheduler"
 )
 
 func main() {
+	config := config.Config{}
+	if err := config.SetFromBytes(); err != nil {
+		fmt.Println(err)
+		return
+	}
+	connect(&config)
+}
+
+func connect(conf *config.Config) {
 	wac, err := whatsapp.NewConn(60 * time.Second)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not create a connection to WhatsApp: %v\n", err)
 		return
 	}
-	wac.AddHandler(twenteHandler{Conn: wac, StartTime: uint64(time.Now().Unix())})
+	wac.SetClientVersion(2, 2021, 4)
+	wac.AddHandler(&handlers.TwenteHandler{Conn: wac, StartTime: uint64(time.Now().Unix())})
 
-	if err = login(wac); err != nil {
+	if err := login(wac); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not login to WhatsApp: %v\n", err)
 		return
 	}
@@ -30,7 +43,8 @@ func main() {
 		return
 	}
 
-	sendTextMessage(wac)
+	scheduler := scheduler.Scheduler{Wac: wac, Conf: conf}
+	go scheduler.Watch(time.Hour * 24)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -99,15 +113,4 @@ func writeSession(session whatsapp.Session) error {
 	encoder := gob.NewEncoder(file)
 	err = encoder.Encode(session)
 	return err
-}
-
-func sendTextMessage(wac *whatsapp.Conn) {
-	text := whatsapp.TextMessage{
-		Info: whatsapp.MessageInfo{
-			RemoteJid: "@g.us",
-		},
-		Text: "Wait what",
-	}
-	err, _ := wac.Send(text)
-	fmt.Println(err)
 }
