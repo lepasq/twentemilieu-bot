@@ -31,14 +31,14 @@ func createCalendar(id string) *Calendar {
 	calendar := Calendar{
 		CompanyCode:     companyCode,
 		UniqueAddressID: id,
-		StartDate:       getDateToday(),
-		EndDate:         getDateToday(),
+		StartDate:       getDateTomorrow(),
+		EndDate:         getDateTomorrow(),
 	}
 	return &calendar
 }
 
-func getDateToday() string {
-	return time.Now().Format("2006-01-02") // For testing, use the line below
+func getDateTomorrow() string {
+	return time.Now().AddDate(0, 0, 1).Format("2006-01-02") // For testing, use the line below
 	//return "2020-10-26" // For real date, use the line above
 }
 
@@ -111,6 +111,6 @@ func GetMessage(config *config.Config) (*string, error) {
 	if ok != nil {
 		return nil, errors.New("There are no deposits for today.")
 	}
-	pickupMessage := fmt.Sprint("Today, on the ", getDateToday(), " you need to deposit a ", *pickup, " container.")
+	pickupMessage := fmt.Sprint("Tomorrow, on the ", getDateTomorrow(), " you need to deposit a ", *pickup, " container.")
 	return &pickupMessage, nil
 }
