@@ -1,0 +1,9 @@
+---
+- whatsapp:
+    - remoteJid: number@s.whatsapp.net
+
+
+- api:
+    - postCode: 7545MR
+    - houseNumber: 4
+    - houseLetter: a
